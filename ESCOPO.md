@@ -2,7 +2,7 @@
 
 ## Proposta
 
-Desenvolver um novo site e uma API para conectar clientes a barbeiros. Clientes poderão consultar barbeiros, serviços e horários disponíveis e solicitar um agendamento. Barbeiros poderão gerenciar seus serviços, disponibilidade e solicitações de agendamento. Este é um projeto independente, criado para a apresentação da faculdade, e não faz parte do BarberFlow.
+Desenvolver um novo site e uma API para conectar clientes a barbeiros. Clientes poderão consultar barbeiros, serviços e horários disponíveis e solicitar um agendamento. Barbeiros poderão gerenciar seus serviços, disponibilidade e solicitações de agendamento. 
 
 ## Objetivo da primeira versão (MVP)
 
