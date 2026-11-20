@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciamento de Serviços — Barbearia Anchieta</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="brand">
+      <span class="brand-badge">✂</span>
+      <span>Barbearia Anchieta · Área do Barbeiro</span>
+    </a>
+    <nav class="nav-links">
+      <a href="cadastro-barbeiro.html" class="nav-link">Cadastro (#17)</a>
+      <a href="login-barbeiro.html" class="nav-link">Login (#18)</a>
+      <a href="servicos.html" class="nav-link active">Serviços (#19)</a>
+      <a href="horarios.html" class="nav-link">Horários (#20)</a>
+    </nav>
+    <div class="user-pill">
+      <span>Barbeiro: <strong id="barbeiro-nome-header">Não autenticado</strong></span>
+      <button type="button" id="btn-sair" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.55rem;">Sair</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <span class="task-tag">Task #19 · Gerenciamento de Serviços</span>
+        <h1 class="page-title">Meus Serviços</h1>
+        <p class="page-subtitle">
+          Cadastre, consulte, edite e remova os serviços que você oferece na barbearia.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="horarios.html" class="btn btn-secondary">Gerenciar Horários (#20) →</a>
+      </div>
+    </div>
+
+    <div class="api-config-bar">
+      <div>
+        <label for="api-base-url-input" style="display:inline; font-size:0.78rem; margin-right:0.35rem;">URL da API:</label>
+        <input type="text" id="api-base-url-input" placeholder="http://localhost:3000" />
+      </div>
+      <label class="checkbox-group" style="margin:0; font-size:0.78rem;">
+        <input type="checkbox" id="api-fallback-checkbox" checked />
+        <span>Simular caso API offline</span>
+      </label>
+    </div>
+
+    <div id="mensagem-servicos" class="alert" role="alert"></div>
+
+    <div class="grid-2">
+      <!-- Formulário de Cadastro / Edição de Serviço -->
+      <section class="card">
+        <h2 id="titulo-form-servico" style="font-size: 1.15rem; margin-bottom: 1rem;">
+          Novo Serviço
+        </h2>
+
+        <form id="form-servico" novalidate>
+          <input type="hidden" id="servico-id-edicao" value="" />
+
+          <div class="form-group">
+            <label for="nome-servico">Nome do serviço *</label>
+            <input
+              type="text"
+              id="nome-servico"
+              placeholder="Ex.: Corte Degradê, Barba Completa"
+              required
+              maxlength="120"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="preco-servico">Preço (R$) *</label>
+              <input
+                type="number"
+                id="preco-servico"
+                placeholder="45.00"
+                step="0.01"
+                min="0"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="duracao-servico">Duração (min) *</label>
+              <input
+                type="number"
+                id="duracao-servico"
+                placeholder="30"
+                step="5"
+                min="1"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="descricao-servico">Descrição <span class="label-hint">(opcional)</span></label>
+            <textarea
+              id="descricao-servico"
+              placeholder="Detalhes do serviço (ex.: inclui lavagem e finalização com pomada)"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-group">
+              <input type="checkbox" id="ativo-servico" checked />
+              <span>Serviço ativo para agendamento</span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" id="btn-salvar-servico" class="btn btn-primary btn-block">
+              Salvar Serviço
+            </button>
+            <button
+              type="button"
+              id="btn-cancelar-edicao"
+              class="btn btn-secondary"
+              style="display: none;"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Lista de Serviços Cadastrados -->
+      <section class="card">
+        <div class="list-header">
+          <div>
+            <h2 style="font-size: 1.15rem;">Serviços Cadastrados</h2>
+            <p class="page-subtitle" style="font-size: 0.84rem;">
+              Lista consultada da API vinculada ao seu perfil de barbeiro.
+            </p>
+          </div>
+          <button type="button" id="btn-recarregar" class="btn btn-secondary btn-sm">
+            Atualizar Lista
+          </button>
+        </div>
+
+        <div id="lista-servicos" class="items-list">
+          <div class="empty-state">Carregando serviços...</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    inicializarBarraApi();
+
+    // Garante que haja um barbeiro autenticado (ou cria sessão demo se aberta diretamente para teste)
+    let usuario = obterUsuarioLogado();
+    if (!usuario || !obterToken()) {
+      usuario = {
+        id: 'barbeiro-antonio-01',
+        nome: 'Antônio Wagner (Barbeiro)',
+        email: 'antonio@barbearia.com',
+        tipo: 'BARBEIRO',
+      };
+      salvarSessao('jwt-demo-token-barbeiro', usuario);
+    }
+
+    document.getElementById('barbeiro-nome-header').textContent = usuario.nome;
+    document.getElementById('btn-sair').addEventListener('click', encerrarSessao);
+
+    const form = document.getElementById('form-servico');
+    const tituloForm = document.getElementById('titulo-form-servico');
+    const inputIdEdicao = document.getElementById('servico-id-edicao');
+    const btnSalvar = document.getElementById('btn-salvar-servico');
+    const btnCancelarEdicao = document.getElementById('btn-cancelar-edicao');
+    const containerLista = document.getElementById('lista-servicos');
+
+    let servicosCarregados = [];
+
+    function formatarMoeda(valor) {
+      const num = Number(valor);
+      if (isNaN(num)) return 'R$ 0,00';
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function renderizarServicos(lista) {
+      servicosCarregados = lista;
+      if (!lista || lista.length === 0) {
+        containerLista.innerHTML = `
+          <div class="empty-state">
+            <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem;">
+              Nenhum serviço cadastrado ainda
+            </p>
+            <p style="font-size: 0.86rem;">
+              Use o formulário ao lado para cadastrar seu primeiro serviço (ex.: Corte Degradê, Barba).
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      containerLista.innerHTML = lista
+        .map((s) => {
+          const ativo = s.ativo !== false;
+          const duracao = s.duracaoMinutos ?? s.duracao_minutos ?? 30;
+          return `
+            <article class="item-card" data-id="${s.id}">
+              <div class="item-main">
+                <h4>
+                  <span>${escapeHtml(s.nome)}</span>
+                  <span class="badge ${ativo ? 'badge-success' : 'badge-muted'}">
+                    ${ativo ? 'Ativo' : 'Inativo'}
+                  </span>
+                </h4>
+                <div class="item-meta">
+                  <strong>${formatarMoeda(s.preco)}</strong> · ⏱ ${duracao} min
+                  ${s.descricao ? `<br /><span>${escapeHtml(s.descricao)}</span>` : ''}
+                </div>
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="iniciarEdicao('${s.id}')">
+                  Editar
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">
+                  Remover
+                </button>
+              </div>
+            </article>
+          `;
+        })
+        .join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function carregarServicos() {
+      try {
+        const lista = await listarServicosBarbeiro();
+        renderizarServicos(lista);
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-servicos',
+          erro.message || 'Erro ao consultar os serviços na API.',
+          'error'
+        );
+        renderizarServicos([]);
+      }
+    }
+
+    window.iniciarEdicao = function (id) {
+      const item = servicosCarregados.find((s) => String(s.id) === String(id));
+      if (!item) return;
+
+      inputIdEdicao.value = item.id;
+      document.getElementById('nome-servico').value = item.nome || '';
+      document.getElementById('preco-servico').value = item.preco || '';
+      document.getElementById('duracao-servico').value =
+        item.duracaoMinutos ?? item.duracao_minutos ?? 30;
+      document.getElementById('descricao-servico').value = item.descricao || '';
+      document.getElementById('ativo-servico').checked = item.ativo !== false;
+
+      tituloForm.textContent = 'Editar Serviço';
+      btnSalvar.textContent = 'Atualizar Serviço';
+      btnCancelarEdicao.style.display = 'inline-flex';
+      document.getElementById('nome-servico').focus();
+    };
+
+    function resetarFormulario() {
+      form.reset();
+      inputIdEdicao.value = '';
+      document.getElementById('ativo-servico').checked = true;
+      tituloForm.textContent = 'Novo Serviço';
+      btnSalvar.textContent = 'Salvar Serviço';
+      btnCancelarEdicao.style.display = 'none';
+    }
+
+    btnCancelarEdicao.addEventListener('click', resetarFormulario);
+
+    window.excluirServico = async function (id) {
+      limparMensagem('mensagem-servicos');
+      try {
+        const res = await removerServicoBarbeiro(id);
+        exibirMensagem('mensagem-servicos', res.mensagem || 'Serviço removido com sucesso!', 'success');
+        if (inputIdEdicao.value === String(id)) {
+          resetarFormulario();
+        }
+        await carregarServicos();
+      } catch (erro) {
+        exibirMensagem('mensagem-servicos', erro.message || 'Erro ao remover serviço.', 'error');
+      }
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      limparMensagem('mensagem-servicos');
+
+      const nome = document.getElementById('nome-servico').value.trim();
+      const preco = document.getElementById('preco-servico').value;
+      const duracaoMinutos = document.getElementById('duracao-servico').value;
+      const descricao = document.getElementById('descricao-servico').value.trim();
+      const ativo = document.getElementById('ativo-servico').checked;
+
+      if (!nome) {
+        exibirMensagem('mensagem-servicos', 'Informe o nome do serviço.', 'error');
+        return;
+      }
+
+      if (preco === '' || Number(preco) < 0) {
+        exibirMensagem('mensagem-servicos', 'Informe um preço válido (maior ou igual a R$ 0,00).', 'error');
+        return;
+      }
+
+      if (!duracaoMinutos || Number(duracaoMinutos) < 1) {
+        exibirMensagem('mensagem-servicos', 'A duração deve ser de pelo menos 1 minuto.', 'error');
+        return;
+      }
+
+      btnSalvar.disabled = true;
+
+      try {
+        const idEdicao = inputIdEdicao.value;
+        if (idEdicao) {
+          const res = await atualizarServicoBarbeiro(idEdicao, {
+            nome,
+            descricao,
+            duracaoMinutos,
+            preco,
+            ativo,
+          });
+          exibirMensagem('mensagem-servicos', res.mensagem || 'Serviço atualizado com sucesso!', 'success');
+        } else {
+          const res = await criarServicoBarbeiro({
+            nome,
+            descricao,
+            duracaoMinutos,
+            preco,
+            ativo,
+          });
+          exibirMensagem('mensagem-servicos', res.mensagem || 'Serviço cadastrado com sucesso!', 'success');
+        }
+        resetarFormulario();
+        await carregarServicos();
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-servicos',
+          erro.message || 'Não foi possível salvar o serviço na API.',
+          'error'
+        );
+      } finally {
+        btnSalvar.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-recarregar').addEventListener('click', carregarServicos);
+
+    carregarServicos();
+  </script>
+</body>
+</html>
