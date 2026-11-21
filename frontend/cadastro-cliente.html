@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Cliente - Barbearia Anchieta</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+    <header class="navbar">
+    <a href="index.html" class="brand">
+      <span class="brand-badge">✂</span>
+      <span>Barbearia Anchieta · Área do Cliente</span>
+    </a>
+    <nav class="nav-links">
+      <a href="cadastro-cliente.html" class="nav-link active">Cadastro Cliente (#15)</a>
+      <a href="login-cliente.html" class="nav-link">Login Cliente (#16)</a>
+      <a href="servicos.html" class="nav-link">Serviços (#19)</a>
+      <a href="horarios.html" class="nav-link">Horários (#20)</a>
+    </nav>
+  </header>
+
+<main class="auth-wrapper">
+    <section class="auth-card">
+      <span class="task-tag">Task #15 · Cadastro de Cliente</span>
+      <h1 class="page-title">Criar conta de Cliente</h1>
+      <p class="page-subtitle" style="margin-bottom: 1.35rem;">
+        Crie sua conta para acessar os serviços da barbearia e acompanhar seus agendamentos.
+      </p>
+
+      <div class="api-config-bar">
+        <div>
+          <label for="api-base-url-input" style="display:inline; font-size:0.78rem; margin-right:0.35rem;">URL da API:</label>
+          <input type="text" id="api-base-url-input" placeholder="http://localhost:3000" />
+        </div>
+        <label class="checkbox-group" style="margin:0; font-size:0.78rem;">
+          <input type="checkbox" id="api-fallback-checkbox" checked />
+          <span>Simular caso API offline</span>
+        </label>
+      </div>
+
+      <div id="mensagem-cadastro" class="alert" role="alert"></div>
+
+      <form id="form-cadastro-cliente" novalidate>
+        <div class="form-group">
+          <label for="nome">Nome completo *</label>
+          <input
+            type="text"
+            id="nome"
+            name="nome"
+            placeholder="Ex.: Antônio Wagner"
+            required
+            maxlength="120"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail *</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="voce@exemplo.com"
+            required
+            maxlength="255"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="telefone">Telefone / WhatsApp <span class="label-hint">(opcional)</span></label>
+          <input
+            type="tel"
+            id="telefone"
+            name="telefone"
+            placeholder="(11) 99999-9999"
+            maxlength="30"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="senha">Senha * <span class="label-hint">(mín. 8)</span></label>
+            <input
+              type="password"
+              id="senha"
+              name="senha"
+              placeholder="Mínimo 8 caracteres"
+              required
+              minlength="8"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmar-senha">Confirmar senha *</label>
+            <input
+              type="password"
+              id="confirmar-senha"
+              name="confirmarSenha"
+              placeholder="Repita a senha"
+              required
+              minlength="8"
+            />
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit" class="btn btn-primary btn-block" style="margin-top: 0.4rem;">
+          Cadastrar Cliente
+        </button>
+      </form>
+
+        <div class="auth-footer">
+            <p class="footer-text">
+            Já possui uma conta? <a href="login-cliente.html">Faça login</a>
+            </p>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+    inicializarBarraApi();
+
+    const form = document.getElementById('form-cadastro-cliente');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      limparMensagem('mensagem-cadastro');
+
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+      const senha = document.getElementById('senha').value;
+      const confirmarSenha = document.getElementById('confirmar-senha').value;
+
+      if (!nome || !email || !senha) {
+        exibirMensagem('mensagem-cadastro', 'Preencha todos os campos obrigatórios (nome, e-mail e senha).', 'error');
+        return;
+      }
+
+      if (senha.length < 8) {
+        exibirMensagem('mensagem-cadastro', 'A senha deve ter pelo menos 8 caracteres.', 'error');
+        return;
+      }
+
+      if (senha !== confirmarSenha) {
+        exibirMensagem('mensagem-cadastro', 'A confirmação de senha não confere.', 'error');
+        return;
+      }
+
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Enviando para a API...';
+
+      try {
+        const resposta = await cadastrarCliente({ nome, email, telefone, senha });
+        exibirMensagem(
+          'mensagem-cadastro',
+          resposta.mensagem || 'Cliente cadastrado com sucesso! Você já pode fazer login.',
+          'success'
+        );
+        form.reset();
+        setTimeout(() => {
+          window.location.href = 'login-cliente.html?cadastro=sucesso';
+        }, 1400);
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-cadastro',
+          erro.message || 'Não foi possível realizar o cadastro do cliente.',
+          'error'
+        );
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Cadastrar Cliente';
+      }
+    });
+  </script>
+</body>
+</html>
