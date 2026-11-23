@@ -12,7 +12,6 @@ export const buscar = async (req: Request, res: Response) => {
   res.json(await barbeiroService.buscarBarbeiroPorId(id))
 }
 
-/
 export const horariosLivres = async (req: Request, res: Response) => {
   const horarios = await agendamentoService.listarHorariosLivres({
     barbeiroId: exigirUuid(req.params.id, 'id'),

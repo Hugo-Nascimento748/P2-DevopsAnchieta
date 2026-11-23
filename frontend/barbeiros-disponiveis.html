@@ -3,60 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Barbeiros Disponíveis — Barbearia Anchieta</title>
+  <title>Barbeiros e horários — Barbearia Anchieta</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <header class="navbar">
-    <a href="index.html" class="brand">
-      <span class="brand-badge">✂</span>
-      <span>Barbearia Anchieta · Área do Cliente</span>
-    </a>
+    <a href="index.html" class="brand"><span class="brand-badge">✂</span><span>Barbearia Anchieta · Área do Cliente</span></a>
     <nav class="nav-links">
-      <a href="barbeiros-disponiveis.html" class="nav-link active">Barbeiros disponíveis</a>
+      <a href="barbeiros-disponiveis.html" class="nav-link active">Barbeiros e horários</a>
       <a href="cadastro-cliente.html" class="nav-link">Criar conta</a>
       <a href="login-cliente.html" class="nav-link">Entrar</a>
     </nav>
   </header>
 
   <main class="container">
-    <div class="page-header"> 
+    <div class="page-header">
       <div>
         <span class="task-tag">Área do Cliente</span>
-        <h1 class="page-title">Encontre um barbeiro disponível</h1>
-        <p class="page-subtitle">
-          Escolha uma data para consultar os barbeiros com horários disponíveis.
-        </p>
+        <h1 class="page-title">Encontre um horário</h1>
+        <p class="page-subtitle">Escolha uma data, barbeiro e serviço para consultar e reservar um horário.</p>
       </div>
     </div>
 
     <div class="api-config-bar">
       <div>
-        <label for="api-base-url-input" style="display:inline; font-size:0.78rem; margin-right:0.35rem;">URL da API:</label>
+        <label for="api-base-url-input" style="display:inline;font-size:0.78rem;margin-right:0.35rem;">URL da API:</label>
         <input type="text" id="api-base-url-input" placeholder="http://localhost:3000" />
       </div>
-      <label class="checkbox-group" style="margin:0; font-size:0.78rem;">
-        <input type="checkbox" id="api-fallback-checkbox" checked />
+      <label class="checkbox-group" style="margin:0;font-size:0.78rem;">
+        <input type="checkbox" id="api-fallback-checkbox" />
         <span>Simular caso API offline</span>
       </label>
     </div>
 
-    <section class="card" style="margin-bottom: 1.25rem;">
+    <section class="card" style="margin-bottom:1.25rem;">
       <form id="form-busca" class="form-row" style="align-items:end;">
         <div class="form-group" style="margin-bottom:0;">
           <label for="data-busca">Data desejada</label>
           <input type="date" id="data-busca" required />
         </div>
-        <button type="submit" id="btn-buscar" class="btn btn-primary">
-          Buscar horários
-        </button>
+        <button type="submit" id="btn-buscar" class="btn btn-primary">Buscar horários</button>
       </form>
     </section>
 
     <div id="mensagem-busca" class="alert" role="alert"></div>
-    <section aria-live="polite">
+    <section aria-live="polite" style="margin-bottom:2rem;">
       <div id="lista-barbeiros" class="items-list">
-        <div class="empty-state">Carregando barbeiros disponíveis...</div>
+        <div class="empty-state">Carregando barbeiros...</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="list-header">
+        <div>
+          <h2 style="font-size:1.15rem;">Meus agendamentos</h2>
+          <p class="page-subtitle" style="font-size:0.84rem;">Consulte ou cancele seus horários reservados.</p>
+        </div>
+        <button type="button" id="btn-atualizar-agendamentos" class="btn btn-secondary btn-sm">Atualizar</button>
+      </div>
+      <div id="mensagem-agendamentos" class="alert" role="alert"></div>
+      <div id="lista-agendamentos" class="items-list">
+        <div class="empty-state">Carregando agendamentos...</div>
       </div>
     </section>
   </main>
@@ -64,13 +71,17 @@
   <script src="js/api.js"></script>
   <script>
     inicializarBarraApi();
-
+    const sessao = exigirSessaoCliente();
     const formBusca = document.getElementById('form-busca');
     const inputData = document.getElementById('data-busca');
     const botaoBuscar = document.getElementById('btn-buscar');
     const listaBarbeiros = document.getElementById('lista-barbeiros');
-    const chaveUsuarios = 'barbearia_mock_usuarios';
-    const chaveHorarios = 'barbearia_mock_disponibilidades';
+    const listaAgendamentos = document.getElementById('lista-agendamentos');
+
+    function escaparHtml(valor) {
+      return String(valor ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
 
     function dataLocalISO(data) {
       const ano = data.getFullYear();
@@ -79,139 +90,177 @@
       return `${ano}-${mes}-${dia}`;
     }
 
-    function escaparHtml(valor) {
-      return String(valor || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    function formatarDataHora(valor) {
+      const data = new Date(valor);
+      return isNaN(data.getTime()) ? '' : data.toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
     }
 
     function formatarHora(valor) {
       const data = new Date(valor);
-      return isNaN(data.getTime())
-        ? ''
-        : data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      return isNaN(data.getTime()) ? '' : data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function carregarDadosOffline(dataSelecionada) {
-      const usuarios = JSON.parse(localStorage.getItem(chaveUsuarios) || '[]');
-      const horarios = JSON.parse(localStorage.getItem(chaveHorarios) || '[]');
-      const barbeiros = usuarios.filter((usuario) => usuario.tipo === 'BARBEIRO');
+    function estadoVazio(texto) {
+      return `<div class="empty-state">${escaparHtml(texto)}</div>`;
+    }
 
-      return barbeiros
-        .map((barbeiro) => ({
-          ...barbeiro,
-          horarios: horarios.filter((horario) =>
-            horario.barbeiroId === barbeiro.id &&
-            dataLocalISO(new Date(horario.inicio)) === dataSelecionada &&
-            new Date(horario.fim) > new Date()
-          ),
-        }))
-        .filter((barbeiro) => barbeiro.horarios.length > 0);
+    async function carregarHorariosDoCartao(cartao, barbeiro) {
+      const select = cartao.querySelector('[data-servico]');
+      const container = cartao.querySelector('[data-horarios]');
+      const servicoId = select.value;
+      if (!servicoId) {
+        container.innerHTML = estadoVazio('Este barbeiro ainda não tem serviços ativos.');
+        return;
+      }
+
+      container.innerHTML = estadoVazio('Buscando horários...');
+      try {
+        const horarios = await listarHorariosLivresCliente({
+          barbeiroId: barbeiro.id, servicoId, data: inputData.value
+        });
+        if (!horarios.length) {
+          container.innerHTML = estadoVazio('Sem horários livres para esta data.');
+          return;
+        }
+        container.replaceChildren();
+        horarios.forEach((horario) => {
+          const botao = document.createElement('button');
+          botao.type = 'button';
+          botao.className = 'btn btn-primary btn-sm';
+          botao.textContent = `Reservar às ${formatarHora(horario.inicio)}`;
+          botao.addEventListener('click', () => reservarHorario(cartao, barbeiro, servicoId, horario.inicio));
+          container.appendChild(botao);
+        });
+      } catch (erro) {
+        container.innerHTML = estadoVazio(erro.message || 'Não foi possível consultar horários.');
+      }
     }
 
     function renderizarBarbeiros(barbeiros) {
       if (!barbeiros.length) {
-        listaBarbeiros.innerHTML = `
-          <div class="empty-state">
-            <p style="font-weight:600; color:var(--text-primary); margin-bottom:0.3rem;">
-              Nenhum barbeiro com horário disponível nesta data
-            </p>
-            <p style="font-size:0.86rem;">Tente escolher outro dia.</p>
-          </div>
-        `;
+        listaBarbeiros.innerHTML = estadoVazio('Nenhum barbeiro cadastrado.');
         return;
       }
 
-      listaBarbeiros.innerHTML = barbeiros.map((barbeiro) => {
-        const horarios = barbeiro.horarios || barbeiro.disponibilidades || [];
-        const botoesHorario = horarios.map((horario) => `
-          <span class="badge badge-accent">
-            ${escaparHtml(formatarHora(horario.inicio))} às ${escaparHtml(formatarHora(horario.fim))}
-          </span>
-        `).join(' ');
-
+      listaBarbeiros.innerHTML = barbeiros.map((barbeiro, indice) => {
+        const servicos = Array.isArray(barbeiro.servicos) ? barbeiro.servicos : [];
+        const opcoes = servicos.map((servico) => {
+          const preco = Number(servico.preco).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+          return `<option value="${escaparHtml(servico.id)}">${escaparHtml(servico.nome)} · ${Number(servico.duracaoMinutos)} min · R$ ${preco}</option>`;
+        }).join('');
         return `
-          <article class="item-card">
+          <article class="item-card" data-barbeiro-index="${indice}">
             <div class="item-main">
               <h4>${escaparHtml(barbeiro.nome || 'Barbeiro')}</h4>
-              <div class="item-meta">
-                ${barbeiro.email ? escaparHtml(barbeiro.email) + '<br />' : ''}
-                <span class="badge badge-success">Disponível</span>
+              <div class="item-meta">${escaparHtml(barbeiro.telefone || '')}</div>
+              <div class="form-group" style="margin-top:0.8rem;margin-bottom:0;">
+                <label for="servico-${indice}">Serviço</label>
+                <select id="servico-${indice}" data-servico ${servicos.length ? '' : 'disabled'}>
+                  ${opcoes || '<option value="">Nenhum serviço disponível</option>'}
+                </select>
               </div>
             </div>
-            <div class="item-actions" aria-label="Horários disponíveis">
-              ${botoesHorario}
+            <div class="item-actions" data-horarios aria-label="Horários livres">
+              <span class="empty-state">Selecione um serviço.</span>
             </div>
-          </article>
-        `;
+          </article>`;
       }).join('');
+
+      listaBarbeiros.querySelectorAll('[data-barbeiro-index]').forEach((cartao) => {
+        const barbeiro = barbeiros[Number(cartao.dataset.barbeiroIndex)];
+        const select = cartao.querySelector('[data-servico]');
+        if (!select.value) {
+          cartao.querySelector('[data-horarios]').innerHTML = estadoVazio('Este barbeiro ainda não tem serviços ativos.');
+          return;
+        }
+        select.addEventListener('change', () => carregarHorariosDoCartao(cartao, barbeiro));
+        carregarHorariosDoCartao(cartao, barbeiro);
+      });
     }
 
     async function buscarBarbeiros() {
-      const dataSelecionada = inputData.value;
-      if (!dataSelecionada) {
-        exibirMensagem('mensagem-busca', 'Selecione uma data para pesquisar.', 'error');
-        return;
-      }
-
       limparMensagem('mensagem-busca');
       botaoBuscar.disabled = true;
       botaoBuscar.textContent = 'Buscando...';
-      listaBarbeiros.innerHTML = '<div class="empty-state">Buscando horários...</div>';
-
+      listaBarbeiros.innerHTML = estadoVazio('Carregando barbeiros e horários...');
       try {
-        const resultado = await apiRequest(
-          `/barbeiros/disponiveis?data=${encodeURIComponent(dataSelecionada)}`,
-          { method: 'GET' }
-        );
-        const barbeiros = Array.isArray(resultado) ? resultado : resultado.barbeiros;
-        if (!Array.isArray(barbeiros)) {
-          throw new Error('A resposta da API não contém uma lista de barbeiros.');
-        }
-        renderizarBarbeiros(barbeiros);
+        renderizarBarbeiros(await listarBarbeirosCliente());
       } catch (erro) {
-        if (erro.status || !(erro instanceof TypeError) || !isOfflineFallbackEnabled()) {
-          exibirMensagem(
-            'mensagem-busca',
-            erro.message || 'Não foi possível consultar os barbeiros disponíveis.',
-            'error'
-          );
-          listaBarbeiros.innerHTML = '';
-          return;
-        }
-
-        try {
-          renderizarBarbeiros(carregarDadosOffline(dataSelecionada));
-          exibirMensagem(
-            'mensagem-busca',
-            'Exibindo horários de demonstração salvos neste navegador.',
-            'info'
-          );
-        } catch (erroLocal) {
-          exibirMensagem(
-            'mensagem-busca',
-            erroLocal.message || 'Não foi possível carregar os dados locais.',
-            'error'
-          );
-          listaBarbeiros.innerHTML = '';
-        }
+        listaBarbeiros.innerHTML = '';
+        exibirMensagem('mensagem-busca', erro.message || 'Não foi possível carregar barbeiros.', 'error');
       } finally {
         botaoBuscar.disabled = false;
         botaoBuscar.textContent = 'Buscar horários';
       }
     }
 
-    inputData.min = dataLocalISO(new Date());
-    inputData.value = inputData.min;
-    formBusca.addEventListener('submit', (event) => {
-      event.preventDefault();
-      buscarBarbeiros();
-    });
+    async function reservarHorario(cartao, barbeiro, servicoId, inicio) {
+      const servico = (barbeiro.servicos || []).find((item) => item.id === servicoId);
+      const confirmacao = window.confirm(`Confirmar ${servico?.nome || 'serviço'} com ${barbeiro.nome} em ${formatarDataHora(inicio)}?`);
+      if (!confirmacao) return;
+      try {
+        await criarAgendamentoCliente({ barbeiroId: barbeiro.id, servicoId, inicio });
+        exibirMensagem('mensagem-busca', 'Agendamento solicitado com sucesso.', 'success');
+        await carregarHorariosDoCartao(cartao, barbeiro);
+        await carregarAgendamentos();
+      } catch (erro) {
+        exibirMensagem('mensagem-busca', erro.message || 'Não foi possível concluir o agendamento.', 'error');
+      }
+    }
 
-    buscarBarbeiros();
+    async function carregarAgendamentos() {
+      listaAgendamentos.innerHTML = estadoVazio('Carregando agendamentos...');
+      try {
+        const agendamentos = await listarAgendamentosCliente();
+        if (!agendamentos.length) {
+          listaAgendamentos.innerHTML = estadoVazio('Você ainda não tem agendamentos.');
+          return;
+        }
+        listaAgendamentos.innerHTML = agendamentos.map((item) => {
+          const nomesStatus = { PENDENTE: 'Pendente', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', CONCLUIDO: 'Concluído' };
+          const podeCancelar = ['PENDENTE', 'CONFIRMADO'].includes(item.status);
+          return `
+            <article class="item-card">
+              <div class="item-main">
+                <h4>${escaparHtml(item.servico?.nome || 'Serviço')} com ${escaparHtml(item.barbeiro?.nome || 'Barbeiro')}</h4>
+                <div class="item-meta">${escaparHtml(formatarDataHora(item.inicio))} · ${escaparHtml(nomesStatus[item.status] || item.status)}</div>
+              </div>
+              ${podeCancelar ? `<div class="item-actions"><button type="button" class="btn btn-danger btn-sm" data-cancelar="${escaparHtml(item.id)}">Cancelar</button></div>` : ''}
+            </article>`;
+        }).join('');
+
+        listaAgendamentos.querySelectorAll('[data-cancelar]').forEach((botao) => {
+          botao.addEventListener('click', async () => {
+            if (!window.confirm('Deseja cancelar este agendamento?')) return;
+            try {
+              await cancelarAgendamentoCliente(botao.dataset.cancelar);
+              exibirMensagem('mensagem-agendamentos', 'Agendamento cancelado.', 'success');
+              await carregarAgendamentos();
+            } catch (erro) {
+              exibirMensagem('mensagem-agendamentos', erro.message || 'Não foi possível cancelar.', 'error');
+            }
+          });
+        });
+      } catch (erro) {
+        listaAgendamentos.innerHTML = '';
+        exibirMensagem('mensagem-agendamentos', erro.message || 'Não foi possível carregar seus agendamentos.', 'error');
+      }
+    }
+
+    if (sessao) {
+      inputData.min = dataLocalISO(new Date());
+      inputData.value = inputData.min;
+      formBusca.addEventListener('submit', (event) => {
+        event.preventDefault();
+        buscarBarbeiros();
+      });
+      document.getElementById('btn-atualizar-agendamentos').addEventListener('click', carregarAgendamentos);
+      buscarBarbeiros();
+      carregarAgendamentos();
+    }
   </script>
 </body>
 </html>
+

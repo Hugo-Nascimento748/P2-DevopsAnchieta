@@ -1,14 +1,14 @@
 import 'dotenv/config'
 import { app } from './app'
-import { connectDatabase } from './config/database'
+import { conectarBanco } from './config/database'
 
-const PORT = Number(process.env.PORT) || 3000
+const port = Number(process.env.PORT) || 3000
 
-connectDatabase()
+conectarBanco()
   .then(() => {
-    app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}.`))
+    app.listen(port, () => console.log(`Servidor rodando na porta ${port}.`))
   })
-  .catch((erro) => {
+  .catch((erro: unknown) => {
     console.error('Falha ao iniciar:', erro)
     process.exit(1)
   })
