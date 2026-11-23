@@ -1,3 +1,4 @@
+
 import { DataTypes, Model } from 'sequelize'
 import { sequelize } from '../config/database'
 
@@ -52,5 +53,6 @@ Disponibilidade.init(
     tableName: 'disponibilidades',
     underscored: true,
     timestamps: true,
+    indexes: [{ fields: ['barbeiro_id', 'inicio'] }],
   },
 )
