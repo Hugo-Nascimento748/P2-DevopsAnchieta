@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barbearia Anchieta — Painel do Barbeiro</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="brand">
+      <span class="brand-badge">✂</span>
+      <span>Barbearia Anchieta · Área do Barbeiro</span>
+    </a>
+    <nav class="nav-links">
+      <a href="barbeiros-disponiveis.html" class="nav-link">Barbeiros disponíveis</a>
+      <a href="cadastro-cliente.html" class="nav-link">Cadastro Cliente (#15)</a>
+      <a href="login-cliente.html" class="nav-link">Login Cliente (#16)</a>
+      <a href="cadastro-barbeiro.html" class="nav-link">Cadastro (#17)</a>
+      <a href="login-barbeiro.html" class="nav-link">Login (#18)</a>
+      <a href="servicos.html" class="nav-link">Serviços (#19)</a>
+      <a href="horarios.html" class="nav-link">Horários (#20)</a>
+    
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <span class="task-tag">P2 DevOps Anchieta · Módulo Frontend do Barbeiro</span>
+        <h1 class="page-title">Central do Barbeiro</h1>
+        <p class="page-subtitle">
+          Acesse abaixo cada uma das 4 telas do módulo de barbeiro integradas à API TypeScript.
+        </p>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+      <article class="card">
+        <span class="task-tag">Task #17</span>
+        <h3 style="margin-bottom: 0.4rem;">Cadastro de Barbeiro</h3>
+        <p class="page-subtitle" style="font-size: 0.88rem; margin-bottom: 1.2rem;">
+          Formulário de criação de conta de barbeiro com envio à rota <code>POST /auth/cadastro</code>.
+        </p>
+        <a href="cadastro-barbeiro.html" class="btn btn-primary btn-block">Abrir Cadastro</a>
+      </article>
+
+      <article class="card">
+        <span class="task-tag">Task #18</span>
+        <h3 style="margin-bottom: 0.4rem;">Login de Barbeiro</h3>
+        <p class="page-subtitle" style="font-size: 0.88rem; margin-bottom: 1.2rem;">
+          Autenticação em <code>POST /auth/login</code> com armazenamento do token JWT para rotas protegidas.
+        </p>
+        <a href="login-barbeiro.html" class="btn btn-primary btn-block">Abrir Login</a>
+      </article>
+
+      <article class="card">
+        <span class="task-tag">Task #19</span>
+        <h3 style="margin-bottom: 0.4rem;">Gerenciamento de Serviços</h3>
+        <p class="page-subtitle" style="font-size: 0.88rem; margin-bottom: 1.2rem;">
+          Cadastro, listagem, edição e exclusão de serviços (nome, preço, duração e descrição) na API.
+        </p>
+        <a href="servicos.html" class="btn btn-primary btn-block">Abrir Serviços</a>
+      </article>
+
+      <article class="card">
+        <span class="task-tag">Task #20</span>
+        <h3 style="margin-bottom: 0.4rem;">Gerenciamento de Horários</h3>
+        <p class="page-subtitle" style="font-size: 0.88rem; margin-bottom: 1.2rem;">
+          Cadastro e consulta de horários disponíveis (<code>Disponibilidade</code>: início e fim) do barbeiro.
+        </p>
+        <a href="horarios.html" class="btn btn-primary btn-block">Abrir Horários</a>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

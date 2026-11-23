@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciamento de Horários — Barbearia Anchieta</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="brand">
+      <span class="brand-badge">✂</span>
+      <span>Barbearia Anchieta · Área do Barbeiro</span>
+    </a>
+    <nav class="nav-links">
+      <a href="cadastro-barbeiro.html" class="nav-link">Cadastro (#17)</a>
+      <a href="login-barbeiro.html" class="nav-link">Login (#18)</a>
+      <a href="servicos.html" class="nav-link">Serviços (#19)</a>
+      <a href="horarios.html" class="nav-link active">Horários (#20)</a>
+    </nav>
+    <div class="user-pill">
+      <span>Barbeiro: <strong id="barbeiro-nome-header">Não autenticado</strong></span>
+      <button type="button" id="btn-sair" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.55rem;">Sair</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <div>
+        <span class="task-tag">Task #20 · Gerenciamento de Horários (Disponibilidade)</span>
+        <h1 class="page-title">Meus Horários Disponíveis</h1>
+        <p class="page-subtitle">
+          Cadastre e consulte os intervalos de horários em que você está disponível para atender clientes.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="servicos.html" class="btn btn-secondary">← Gerenciar Serviços (#19)</a>
+      </div>
+    </div>
+
+    <div class="api-config-bar">
+      <div>
+        <label for="api-base-url-input" style="display:inline; font-size:0.78rem; margin-right:0.35rem;">URL da API:</label>
+        <input type="text" id="api-base-url-input" placeholder="http://localhost:3000" />
+      </div>
+      <label class="checkbox-group" style="margin:0; font-size:0.78rem;">
+        <input type="checkbox" id="api-fallback-checkbox" checked />
+        <span>Simular caso API offline</span>
+      </label>
+    </div>
+
+    <div id="mensagem-horarios" class="alert" role="alert"></div>
+
+    <div class="grid-2">
+      <!-- Formulário de Cadastro de Horário Disponível -->
+      <section class="card">
+        <h2 style="font-size: 1.15rem; margin-bottom: 1rem;">
+          Novo Horário Disponível
+        </h2>
+
+        <form id="form-horario" novalidate>
+          <div class="form-group">
+            <label for="data-horario">Data do atendimento *</label>
+            <input type="date" id="data-horario" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="hora-inicio">Hora de início *</label>
+              <input type="time" id="hora-inicio" value="09:00" required />
+            </div>
+
+            <div class="form-group">
+              <label for="hora-fim">Hora de término *</label>
+              <input type="time" id="hora-fim" value="10:00" required />
+            </div>
+          </div>
+
+          <p class="label-hint" style="margin-bottom: 1rem; display: block;">
+            Os campos serão enviados à API no formato ISO (<code>inicio</code> e <code>fim</code>) vinculados ao seu <code>barbeiroId</code>.
+          </p>
+
+          <button type="submit" id="btn-salvar-horario" class="btn btn-primary btn-block">
+            Adicionar Horário
+          </button>
+        </form>
+      </section>
+
+      <!-- Lista de Horários Disponíveis -->
+      <section class="card">
+        <div class="list-header">
+          <div>
+            <h2 style="font-size: 1.15rem;">Horários Cadastrados</h2>
+            <p class="page-subtitle" style="font-size: 0.84rem;">
+              Intervalos consultados da API disponíveis para agendamento.
+            </p>
+          </div>
+          <button type="button" id="btn-recarregar-horarios" class="btn btn-secondary btn-sm">
+            Atualizar Lista
+          </button>
+        </div>
+
+        <div id="lista-horarios" class="items-list">
+          <div class="empty-state">Carregando horários...</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    inicializarBarraApi();
+
+    let usuario = obterUsuarioLogado();
+    if (!usuario || !obterToken()) {
+      usuario = {
+        id: 'barbeiro-antonio-01',
+        nome: 'Antônio Wagner (Barbeiro)',
+        email: 'antonio@barbearia.com',
+        tipo: 'BARBEIRO',
+      };
+      salvarSessao('jwt-demo-token-barbeiro', usuario);
+    }
+
+    document.getElementById('barbeiro-nome-header').textContent = usuario.nome;
+    document.getElementById('btn-sair').addEventListener('click', encerrarSessao);
+
+    // Preenche a data padrão com o dia de hoje
+    const inputData = document.getElementById('data-horario');
+    const hoje = new Date();
+    const yyyy = hoje.getFullYear();
+    const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dd = String(hoje.getDate()).padStart(2, '0');
+    inputData.value = `${yyyy}-${mm}-${dd}`;
+
+    const form = document.getElementById('form-horario');
+    const btnSalvar = document.getElementById('btn-salvar-horario');
+    const containerLista = document.getElementById('lista-horarios');
+
+    function formatarDataHora(isoStr) {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return d.toLocaleDateString('pt-BR', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    }
+
+    function formatarHora(isoStr) {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function calcularDuracaoMinutos(inicioIso, fimIso) {
+      const diffMs = new Date(fimIso).getTime() - new Date(inicioIso).getTime();
+      return Math.max(0, Math.round(diffMs / 60000));
+    }
+
+    function renderizarHorarios(lista) {
+      if (!lista || lista.length === 0) {
+        containerLista.innerHTML = `
+          <div class="empty-state">
+            <p style="font-weight: 600; color: var(--text-primary); margin-bottom: 0.3rem;">
+              Nenhum horário disponível cadastrado
+            </p>
+            <p style="font-size: 0.86rem;">
+              Selecione a data, hora de início e hora de término ao lado para disponibilizar horários na agenda.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      const ordenados = [...lista].sort(
+        (a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime()
+      );
+
+      containerLista.innerHTML = ordenados
+        .map((h) => {
+          const dataFmt = formatarDataHora(h.inicio);
+          const horaIni = formatarHora(h.inicio);
+          const horaFim = formatarHora(h.fim);
+          const duracao = calcularDuracaoMinutos(h.inicio, h.fim);
+
+          return `
+            <article class="item-card" data-id="${h.id}">
+              <div class="item-main">
+                <h4>
+                  <span>📅 ${dataFmt}</span>
+                  <span class="badge badge-accent">${horaIni} às ${horaFim}</span>
+                  <span class="badge badge-success">Disponível</span>
+                </h4>
+                <div class="item-meta">
+                  Duração do bloco: <strong>${duracao} min</strong>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button type="button" class="btn btn-danger btn-sm" onclick="excluirHorario('${h.id}')">
+                  Remover
+                </button>
+              </div>
+            </article>
+          `;
+        })
+        .join('');
+    }
+
+    async function carregarHorarios() {
+      try {
+        const lista = await listarHorariosBarbeiro();
+        renderizarHorarios(lista);
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-horarios',
+          erro.message || 'Erro ao consultar horários disponíveis na API.',
+          'error'
+        );
+        renderizarHorarios([]);
+      }
+    }
+
+    window.excluirHorario = async function (id) {
+      limparMensagem('mensagem-horarios');
+      try {
+        const res = await removerHorarioBarbeiro(id);
+        exibirMensagem('mensagem-horarios', res.mensagem || 'Horário removido com sucesso!', 'success');
+        await carregarHorarios();
+      } catch (erro) {
+        exibirMensagem('mensagem-horarios', erro.message || 'Erro ao remover horário.', 'error');
+      }
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      limparMensagem('mensagem-horarios');
+
+      const dataStr = document.getElementById('data-horario').value;
+      const horaInicio = document.getElementById('hora-inicio').value;
+      const horaFim = document.getElementById('hora-fim').value;
+
+      if (!dataStr || !horaInicio || !horaFim) {
+        exibirMensagem('mensagem-horarios', 'Preencha a data, a hora de início e a hora de término.', 'error');
+        return;
+      }
+
+      const inicioDate = new Date(`${dataStr}T${horaInicio}:00`);
+      const fimDate = new Date(`${dataStr}T${horaFim}:00`);
+
+      if (fimDate <= inicioDate) {
+        exibirMensagem('mensagem-horarios', 'O fim precisa ser posterior ao início.', 'error');
+        return;
+      }
+
+      btnSalvar.disabled = true;
+
+      try {
+        const res = await criarHorarioBarbeiro({
+          inicio: inicioDate.toISOString(),
+          fim: fimDate.toISOString(),
+        });
+        exibirMensagem(
+          'mensagem-horarios',
+          res.mensagem || 'Horário disponível cadastrado com sucesso!',
+          'success'
+        );
+        await carregarHorarios();
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-horarios',
+          erro.message || 'Não foi possível salvar o horário na API.',
+          'error'
+        );
+      } finally {
+        btnSalvar.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-recarregar-horarios').addEventListener('click', carregarHorarios);
+
+    carregarHorarios();
+  </script>
+</body>
+</html>
