@@ -59,9 +59,11 @@ function obterUsuarioLogado() {
 }
 
 function encerrarSessao() {
+  const usuario = obterUsuarioLogado();
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
   localStorage.removeItem(STORAGE_KEYS.USER);
-  window.location.href = 'login-barbeiro.html';
+  window.location.href =
+    usuario && usuario.tipo === 'CLIENTE' ? 'login-cliente.html' : 'login-barbeiro.html';
 }
 
 function exigirAutenticacaoBarbeiro() {
@@ -114,6 +116,115 @@ async function apiRequest(path, options = {}) {
   }
 
   return data;
+}
+
+/* ==================== #15 CADASTRO DE CLIENTE ==================== */
+
+async function cadastrarCliente({ nome, email, telefone, senha }) {
+  const payload = {
+    nome: nome.trim(),
+    email: email.trim().toLowerCase(),
+    telefone: telefone ? telefone.trim() : null,
+    senha,
+    tipo: 'CLIENTE',
+  };
+
+  try {
+    return await apiRequest('/auth/cadastro', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    if (err.status || !isOfflineFallbackEnabled()) {
+      throw err;
+    }
+
+    const lista = JSON.parse(localStorage.getItem(STORAGE_KEYS.MOCK_USERS) || '[]');
+    if (lista.some((usuario) => usuario.email === payload.email)) {
+      throw new Error('Este e-mail já está cadastrado.');
+    }
+
+    const novoUsuario = {
+      id: crypto.randomUUID ? crypto.randomUUID() : 'cliente-' + Date.now(),
+      nome: payload.nome,
+      email: payload.email,
+      telefone: payload.telefone,
+      tipo: 'CLIENTE',
+      senhaSimulada: payload.senha,
+      criadoEm: new Date().toISOString(),
+    };
+    lista.push(novoUsuario);
+    localStorage.setItem(STORAGE_KEYS.MOCK_USERS, JSON.stringify(lista));
+    return {
+      mensagem: 'Cliente cadastrado com sucesso! (Modo simulação local — API offline)',
+      usuario: {
+        id: novoUsuario.id,
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        telefone: novoUsuario.telefone,
+        tipo: novoUsuario.tipo,
+      },
+      _offline: true,
+    };
+  }
+}
+
+/* ==================== #16 LOGIN DE CLIENTE ==================== */
+
+async function loginCliente({ email, senha }) {
+  const payload = {
+    email: email.trim().toLowerCase(),
+    senha,
+  };
+
+  let res;
+  try {
+    res = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    if (err.status || !isOfflineFallbackEnabled()) {
+      throw err;
+    }
+
+    const lista = JSON.parse(localStorage.getItem(STORAGE_KEYS.MOCK_USERS) || '[]');
+    const encontrado = lista.find(
+      (usuario) =>
+        usuario.email === payload.email &&
+        usuario.senhaSimulada === payload.senha &&
+        usuario.tipo === 'CLIENTE'
+    );
+    if (!encontrado) {
+      throw new Error('E-mail ou senha inválidos (ou cadastre um cliente primeiro).');
+    }
+
+    const tokenSimulado =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+      btoa(JSON.stringify({ id: encontrado.id, tipo: 'CLIENTE', email: encontrado.email })) +
+      '.mock-signature';
+    const usuarioPublico = {
+      id: encontrado.id,
+      nome: encontrado.nome,
+      email: encontrado.email,
+      telefone: encontrado.telefone,
+      tipo: 'CLIENTE',
+    };
+    salvarSessao(tokenSimulado, usuarioPublico);
+    return {
+      mensagem: 'Login realizado com sucesso! (Modo simulação local — API offline)',
+      token: tokenSimulado,
+      usuario: usuarioPublico,
+      _offline: true,
+    };
+  }
+
+  if (res.usuario && res.usuario.tipo && res.usuario.tipo.toUpperCase() !== 'CLIENTE') {
+    throw new Error('Esta conta não pertence ao perfil de Cliente.');
+  }
+
+  salvarSessao(res.token, res.usuario);
+  return res;
 }
 
 /* ==================== #17 CADASTRO DE BARBEIRO ==================== */
