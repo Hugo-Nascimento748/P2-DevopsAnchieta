@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
-import * as servicoService from '../services/servicoService'
-import { AppError } from '../utils/AppError'
+import * as servicoService from '../services/servicoservice'
+import { AppError } from '../utils/apperror'
 import {
   exigirNumero,
   exigirString,

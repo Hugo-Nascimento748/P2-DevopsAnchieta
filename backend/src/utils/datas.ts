@@ -1,4 +1,4 @@
-import { AppError } from './AppError'
+import { AppError } from './apperror'
 
 
 const OFFSET_BRASIL = '-03:00'

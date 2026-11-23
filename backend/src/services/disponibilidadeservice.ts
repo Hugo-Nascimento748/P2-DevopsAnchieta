@@ -1,9 +1,9 @@
 import { Op } from 'sequelize'
 import { Agendamento, Disponibilidade, StatusAgendamento } from '../models'
-import { ehConflitoDeHorario } from '../middlewares/errorHandler'
-import { AppError } from '../utils/AppError'
+import { ehConflitoDeHorario } from '../middlewares/errorhandler'
+import { AppError } from '../utils/apperror'
 import { fimDoDia, inicioDoDia } from '../utils/datas'
-import { garantirBarbeiro } from './barbeiroService'
+import { garantirBarbeiro } from './barbeiroservice'
 
 export const criarDisponibilidade = async (dados: {
   barbeiroId: string

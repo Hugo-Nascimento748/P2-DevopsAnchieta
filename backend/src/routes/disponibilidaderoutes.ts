@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import * as controller from '../controllers/disponibilidadeController'
-import { asyncHandler } from '../utils/asyncHandler'
+import { asyncHandler } from '../utils/asynchandler'
 
 export const disponibilidadeRoutes = Router()
 

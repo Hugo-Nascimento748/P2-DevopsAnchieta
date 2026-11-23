@@ -1,6 +1,6 @@
 import { Servico } from '../models'
-import { AppError } from '../utils/AppError'
-import { garantirBarbeiro } from './barbeiroService'
+import { AppError } from '../utils/apperror'
+import { garantirBarbeiro } from './barbeiroservice'
 
 export interface CriarServicoDados {
   barbeiroId: string

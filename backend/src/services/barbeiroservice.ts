@@ -1,5 +1,5 @@
 import { Servico, TipoUsuario, Usuario } from '../models'
-import { AppError } from '../utils/AppError'
+import { AppError } from '../utils/apperror'
 
 /** Lista pública de barbeiros (sem e-mail nem senha), com seus serviços ativos. */
 export const listarBarbeiros = async () =>
