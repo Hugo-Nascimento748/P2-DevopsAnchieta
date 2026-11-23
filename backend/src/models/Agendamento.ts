@@ -1,3 +1,4 @@
+
 import { DataTypes, Model } from 'sequelize'
 import { sequelize } from '../config/database'
 
@@ -80,5 +81,9 @@ Agendamento.init(
     tableName: 'agendamentos',
     underscored: true,
     timestamps: true,
+    indexes: [
+      { fields: ['barbeiro_id', 'inicio'] },
+      { fields: ['cliente_id', 'inicio'] },
+    ],
   },
 )

@@ -1,3 +1,4 @@
+
 import { DataTypes, Model } from 'sequelize'
 import { sequelize } from '../config/database'
 
@@ -7,7 +8,7 @@ export interface ServicoAttributes {
   nome: string
   descricao?: string | null
   duracaoMinutos: number
-  preco: string
+  preco: string | number
   ativo?: boolean
 }
 
@@ -20,6 +21,7 @@ export class Servico
   public nome!: string
   public descricao!: string | null
   public duracaoMinutos!: number
+
   // DECIMAL retorna string para preservar a precisão monetária.
   public preco!: string
   public ativo!: boolean

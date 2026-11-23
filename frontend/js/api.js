@@ -30,7 +30,7 @@ function setApiBaseUrl(url) {
 
 function isOfflineFallbackEnabled() {
   const val = localStorage.getItem(STORAGE_KEYS.FALLBACK_ENABLED);
-  return val === null ? true : val === 'true';
+  return val === null ? false : val === 'true';
 }
 
 function setOfflineFallbackEnabled(enabled) {
@@ -507,6 +507,61 @@ async function removerHorarioBarbeiro(id) {
     localStorage.setItem(STORAGE_KEYS.MOCK_SLOTS, JSON.stringify(filtrados));
     return { mensagem: 'Horário removido com sucesso!', _offline: true };
   }
+}
+
+/* ==================== FLUXO DE AGENDAMENTO DO CLIENTE ==================== */
+
+function exigirSessaoCliente() {
+  const token = obterToken();
+  const usuario = obterUsuarioLogado();
+  if (!token || !usuario || usuario.tipo !== 'CLIENTE') {
+    window.location.href = 'login-cliente.html?aviso=login_necessario';
+    return null;
+  }
+  return { token, usuario };
+}
+
+async function listarBarbeirosCliente() {
+  const data = await apiRequest('/barbeiros', { method: 'GET' });
+  return Array.isArray(data) ? data : data.barbeiros || [];
+}
+
+async function listarHorariosLivresCliente({ barbeiroId, servicoId, data }) {
+  const query = new URLSearchParams({ servicoId, data });
+  const resultado = await apiRequest(
+    `/barbeiros/${encodeURIComponent(barbeiroId)}/horarios-livres?${query}`,
+    { method: 'GET' }
+  );
+  return Array.isArray(resultado) ? resultado : resultado.horarios || [];
+}
+
+async function criarAgendamentoCliente({ barbeiroId, servicoId, inicio }) {
+  const sessao = exigirSessaoCliente();
+  if (!sessao) throw new Error('Entre como cliente para realizar um agendamento.');
+
+  return apiRequest('/agendamentos', {
+    method: 'POST',
+    body: JSON.stringify({
+      clienteId: sessao.usuario.id,
+      barbeiroId,
+      servicoId,
+      inicio,
+    }),
+  });
+}
+
+async function listarAgendamentosCliente() {
+  const sessao = exigirSessaoCliente();
+  if (!sessao) return [];
+  const query = new URLSearchParams({ clienteId: sessao.usuario.id });
+  const resultado = await apiRequest(`/agendamentos?${query}`, { method: 'GET' });
+  return Array.isArray(resultado) ? resultado : resultado.agendamentos || [];
+}
+
+async function cancelarAgendamentoCliente(id) {
+  return apiRequest(`/agendamentos/${encodeURIComponent(id)}/cancelar`, {
+    method: 'PATCH',
+  });
 }
 
 /* ==================== UI HELPERS ==================== */
