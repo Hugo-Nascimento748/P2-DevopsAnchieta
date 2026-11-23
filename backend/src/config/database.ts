@@ -37,7 +37,7 @@ async function garantirRestricoesDeHorario(): Promise<void> {
 
 export async function conectarBanco(): Promise<void> {
   await sequelize.authenticate()
-  await import('../models')
+  require('../models')
   await sequelize.sync()
   await garantirRestricoesDeHorario()
   console.log('Conexão com o banco de dados estabelecida.')
