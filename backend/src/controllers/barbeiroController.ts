@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import * as agendamentoService from '../services/agendamentoService'
-import * as barbeiroService from '../services/barbeiroService'
+import * as barbeiroService from '../services/barbeiroservice'
 import { exigirString, exigirUuid } from '../utils/validacao'
 
 export const listar = async (_req: Request, res: Response) => {

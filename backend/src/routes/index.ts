@@ -2,9 +2,9 @@ import { Router } from 'express'
 import { autenticar } from '../middlewares/authMiddleware'
 import authRoutes from './authRoutes'
 import { agendamentoRoutes } from './agendamentoRoutes'
-import { barbeiroRoutes } from './barbeiroRoutes'
-import { disponibilidadeRoutes } from './disponibilidadeRoutes'
-import { servicoRoutes } from './servicoRoutes'
+import { barbeiroRoutes } from './barbeiroroutes'
+import { disponibilidadeRoutes } from './disponibilidaderoutes'
+import { servicoRoutes } from './servicoroutes'
 
 export const routes = Router()
 

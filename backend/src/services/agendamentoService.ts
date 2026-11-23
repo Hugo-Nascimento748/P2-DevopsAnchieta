@@ -10,10 +10,10 @@ import {
 import {
   ehConflitoDeHorario,
   MENSAGEM_HORARIO_INDISPONIVEL,
-} from '../middlewares/errorHandler'
-import { AppError } from '../utils/AppError'
+} from '../middlewares/errorhandler'
+import { AppError } from '../utils/apperror'
 import { fimDoDia, inicioDoDia, somarMinutos } from '../utils/datas'
-import { garantirBarbeiro } from './barbeiroService'
+import { garantirBarbeiro } from './barbeiroservice'
 
 
 const sobrepoe = (inicio: Date, fim: Date) => ({

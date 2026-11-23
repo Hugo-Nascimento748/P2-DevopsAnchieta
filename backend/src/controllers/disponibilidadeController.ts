@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import * as disponibilidadeService from '../services/disponibilidadeService'
+import * as disponibilidadeService from '../services/disponibilidadeservice'
 import { exigirData, exigirUuid, queryString } from '../utils/validacao'
 
 export const criar = async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { ExclusionConstraintError, ValidationError } from 'sequelize'
-import { AppError } from '../utils/AppError'
+import { AppError } from '../utils/apperror'
 
 export const MENSAGEM_HORARIO_INDISPONIVEL =
   'Horário indisponível: já existe outro agendamento nesse intervalo.'
