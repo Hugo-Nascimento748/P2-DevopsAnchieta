@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login de Barbeiro — Barbearia Anchieta</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="brand">
+      <span class="brand-badge">✂</span>
+      <span>Barbearia Anchieta · Área do Barbeiro</span>
+    </a>
+    <nav class="nav-links">
+      <a href="cadastro-barbeiro.html" class="nav-link">Cadastro (#17)</a>
+      <a href="login-barbeiro.html" class="nav-link active">Login (#18)</a>
+      <a href="servicos.html" class="nav-link">Serviços (#19)</a>
+      <a href="horarios.html" class="nav-link">Horários (#20)</a>
+    </nav>
+  </header>
+
+  <main class="auth-wrapper">
+    <section class="auth-card">
+      <span class="task-tag">Task #18 · Login de Barbeiro (JWT)</span>
+      <h1 class="page-title">Acesso do Barbeiro</h1>
+      <p class="page-subtitle" style="margin-bottom: 1.35rem;">
+        Entre com seu e-mail e senha para receber seu token JWT e acessar o painel de gerenciamento.
+      </p>
+
+      <div class="api-config-bar">
+        <div>
+          <label for="api-base-url-input" style="display:inline; font-size:0.78rem; margin-right:0.35rem;">URL da API:</label>
+          <input type="text" id="api-base-url-input" placeholder="http://localhost:3000" />
+        </div>
+        <label class="checkbox-group" style="margin:0; font-size:0.78rem;">
+          <input type="checkbox" id="api-fallback-checkbox" checked />
+          <span>Simular caso API offline</span>
+        </label>
+      </div>
+
+      <div id="mensagem-login" class="alert" role="alert"></div>
+
+      <form id="form-login-barbeiro" novalidate>
+        <div class="form-group">
+          <label for="email">E-mail *</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="barbeiro@exemplo.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="senha">Senha *</label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            placeholder="Sua senha"
+            required
+          />
+        </div>
+
+        <button type="submit" id="btn-login" class="btn btn-primary btn-block" style="margin-top: 0.5rem;">
+          Entrar no Painel
+        </button>
+      </form>
+
+      <div id="box-sessao-ativa" class="card" style="margin-top: 1.25rem; padding: 1rem; display: none; background: var(--bg-item);">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.45rem;">
+          Sessão JWT ativa como <strong id="nome-logado-preview" style="color: var(--text-primary);"></strong>
+        </p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <a href="servicos.html" class="btn btn-primary btn-sm">Ir para Serviços (#19)</a>
+          <a href="horarios.html" class="btn btn-secondary btn-sm">Ir para Horários (#20)</a>
+          <button type="button" id="btn-logout-preview" class="btn btn-danger btn-sm">Sair</button>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        Ainda não tem conta de barbeiro?
+        <a href="cadastro-barbeiro.html">Criar cadastro</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    inicializarBarraApi();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('cadastro') === 'sucesso') {
+      exibirMensagem('mensagem-login', 'Cadastro concluído com sucesso! Faça login abaixo.', 'success');
+    } else if (params.get('aviso') === 'login_necessario') {
+      exibirMensagem('mensagem-login', 'Faça login como barbeiro para acessar as telas de gerenciamento.', 'info');
+    }
+
+    const usuarioAtual = obterUsuarioLogado();
+    const tokenAtual = obterToken();
+    if (usuarioAtual && tokenAtual) {
+      document.getElementById('box-sessao-ativa').style.display = 'block';
+      document.getElementById('nome-logado-preview').textContent = `${usuarioAtual.nome} (${usuarioAtual.email})`;
+      document.getElementById('btn-logout-preview').addEventListener('click', encerrarSessao);
+    }
+
+    const form = document.getElementById('form-login-barbeiro');
+    const btnLogin = document.getElementById('btn-login');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      limparMensagem('mensagem-login');
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      if (!email || !senha) {
+        exibirMensagem('mensagem-login', 'Informe seu e-mail e sua senha.', 'error');
+        return;
+      }
+
+      btnLogin.disabled = true;
+      btnLogin.textContent = 'Autenticando...';
+
+      try {
+        const res = await loginBarbeiro({ email, senha });
+        exibirMensagem(
+          'mensagem-login',
+          `${res.mensagem || 'Login realizado com sucesso!'} Token JWT salvo. Redirecionando...`,
+          'success'
+        );
+        setTimeout(() => {
+          window.location.href = 'servicos.html';
+        }, 900);
+      } catch (erro) {
+        exibirMensagem(
+          'mensagem-login',
+          erro.message || 'Falha no login. Verifique suas credenciais.',
+          'error'
+        );
+      } finally {
+        btnLogin.disabled = false;
+        btnLogin.textContent = 'Entrar no Painel';
+      }
+    });
+  </script>
+</body>
+</html>

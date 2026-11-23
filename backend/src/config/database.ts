@@ -1,10 +1,5 @@
+
 import 'dotenv/config'
-import { Sequelize } from 'sequelize'
-
-const databaseUrl = process.env.DATABASE_URL
-
-if (!databaseUrl) {
-  throw neimport 'dotenv/config'
 import { Sequelize } from 'sequelize'
 
 const databaseUrl = process.env.DATABASE_URL
@@ -17,7 +12,6 @@ export const sequelize = new Sequelize(databaseUrl, {
   dialect: 'postgres',
   logging: false,
 })
-
 
 const garantirRestricoesDeHorario = async (): Promise<void> => {
   await sequelize.query('CREATE EXTENSION IF NOT EXISTS btree_gist')
@@ -54,24 +48,10 @@ const garantirRestricoesDeHorario = async (): Promise<void> => {
 export const connectDatabase = async (): Promise<void> => {
   await sequelize.authenticate()
 
- 
   await import('../models')
 
   await sequelize.sync()
   await garantirRestricoesDeHorario()
 
-  console.log('Banco de dados conectado.')
-}
-w Error('DATABASE_URL não foi definida.')
-}
-
-export const sequelize = new Sequelize(databaseUrl, {
-  dialect: 'postgres',
-  logging: false,
-})
-
-export const connectDatabase = async (): Promise<void> => {
-  await sequelize.authenticate()
-  await sequelize.sync()
   console.log('Banco de dados conectado.')
 }
