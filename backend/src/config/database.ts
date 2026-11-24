@@ -6,6 +6,9 @@ if (!databaseUrl) throw new Error('DATABASE_URL não foi definida.')
 
 export const sequelize = new Sequelize(databaseUrl, {
   dialect: 'postgres',
+  dialectOptions: {
+    ssl: process.env.NODE_ENV === 'production',
+  },
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
 })
 

@@ -6,7 +6,7 @@ const port = Number(process.env.PORT) || 3000
 
 conectarBanco()
   .then(() => {
-    app.listen(port, () => console.log(`Servidor rodando na porta ${port}.`))
+    app.listen(port, '0.0.0.0', () => console.log(`Servidor rodando na porta ${port}.`))
   })
   .catch((erro: unknown) => {
     console.error('Falha ao iniciar:', erro)
